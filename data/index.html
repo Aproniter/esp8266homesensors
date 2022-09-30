@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+ <head>
+  <meta charset="utf-8" />
+  <title>ESP</title>
+  <style>
+    .container {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
+    .sensorsData {
+      text-align: center;
+    }
+  </style>
+ </head>
+ <body>
+    <script type="importmap">
+        {
+          "imports": {
+            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+          }
+        }
+      </script>
+      
+      <div id="app">
+        
+        <div class="container">
+          <p class="ledStatus">
+            {{message}}
+          </p>
+          <div class="buttons">
+            <button @click="onLedHendler">On</button>
+            <button @click="offLedHendler">Off</button>
+          </div>
+          <div class="sensorsData">
+            <p class="temp">
+              {{serverData.temperature / 100}}
+            </p>
+            <p class="press">
+              {{serverData.pressure / 100}}
+            </p>
+            <p class="llevel">
+              {{serverData.lightlevel}}
+            </p>
+          </div>
+        </div>
+        
+      </div>
+      
+      <script type="module">
+        import { createApp } from 'vue'
+      
+        createApp({
+          data() {
+            return {
+              message: 'Hello Vue!',
+              serverData: null,
+            }
+          },
+          created(){
+            const href = window.location.href.split('http://')[1].split('/')[0]
+            fetch(`http://${href}/lightStatus`)
+            // fetch(`http://192.168.45.113:8080/socket1On`)
+            .then(response => response.json())
+            .then(rData => this.message = rData.led)
+            this.setupStream();
+          },
+          
+          methods: {
+            onLedHendler(){
+                const href = window.location.href.split('http://')[1].split('/')[0]
+                fetch(`http://${href}/ledOn`)
+                // fetch(`http://192.168.45.113:8080/socket1On`)
+                .then(response => response.json())
+                .then(rData => this.message = rData.led)
+                
+            },
+            offLedHendler(){
+                const href = window.location.href.split('http://')[1].split('/')[0]
+                fetch(`http://${href}/ledOff`)
+                // let data
+                // fetch(`http://192.168.45.113:8080/socket1Off`)
+                .then(response => response.json())
+                .then(rData => this.message = rData.led)
+            },
+            setupStream() {
+                const href = window.location.href.split('http://')[1].split('/')[0]
+                let es = new EventSource(`http://${href}/events`);
+                es.addEventListener('message', event => {
+                    let data = JSON.parse(event.data);
+                    this.serverData = data;
+                }, false);
+                es.addEventListener('error', event => {
+                  if (event.readyState == EventSource.CLOSED) {
+                      console.log('Event was closed');
+                      console.log(EventSource);
+                  }
+                }, false);
+            }
+          },
+        }).mount('#app')
+      </script>
+ </body>
+</html>
